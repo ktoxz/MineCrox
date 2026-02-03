@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-gradient-to-b from-brand-50 via-white to-white text-slate-900 antialiased;
+}
+
+::selection {
+  background: rgb(23 139 255 / 0.22);
+}
+
+@layer base {
+  :focus-visible {
+    outline: none;
+  }
+}
