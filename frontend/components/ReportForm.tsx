@@ -2,12 +2,16 @@
 
 import { useState } from 'react'
 import { Alert } from './ui/Alert'
+import { TurnstileWidget } from './TurnstileWidget'
 
 export function ReportForm() {
   const [slug, setSlug] = useState('')
   const [reason, setReason] = useState('')
   const [email, setEmail] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   async function submit() {
     setStatus('sending')
@@ -16,7 +20,7 @@ export function ReportForm() {
       const res = await fetch(`${base}/api/v1/reports`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ slug, reason, email: email || null }),
+        body: JSON.stringify({ slug, reason, email: email || null, captcha_token: captchaToken || null }),
       })
       if (!res.ok) throw new Error('Request failed')
       setStatus('sent')
@@ -55,10 +59,25 @@ export function ReportForm() {
             placeholder="you@example.com"
           />
         </label>
+
+        <div className="grid gap-1 text-sm">
+          <span className="text-slate-700">Anti-bot verification</span>
+          {turnstileSiteKey ? (
+            <div className="mt-1">
+              <TurnstileWidget siteKey={turnstileSiteKey} onToken={setCaptchaToken} />
+            </div>
+          ) : (
+            <div className="mt-1">
+              <Alert tone="warning" compact>
+                Turnstile is not configured on the frontend. If the backend requires captcha, reports will fail.
+              </Alert>
+            </div>
+          )}
+        </div>
         <button
           type="button"
           onClick={submit}
-          disabled={status === 'sending'}
+          disabled={status === 'sending' || (!!turnstileSiteKey && !captchaToken)}
           className="rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800 disabled:opacity-50"
         >
           {status === 'sending' ? 'Sending…' : 'Submit report'}

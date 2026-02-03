@@ -5,8 +5,8 @@ import { AdContainer } from '../../components/AdContainer'
 import { Button, ButtonLink } from '../../components/ui/Button'
 import { Card, CardBody, CardHeader } from '../../components/ui/Card'
 import { Alert } from '../../components/ui/Alert'
-import { Input } from '../../components/ui/Input'
 import { Label } from '../../components/ui/Label'
+import { TurnstileWidget } from '../../components/TurnstileWidget'
 import { getPublicApiBaseUrl } from '../../lib/api'
 import type { FileCreateResponse } from '../../lib/types'
 
@@ -14,6 +14,7 @@ const allowedExt = ['.zip']
 
 export default function UploadPage() {
   const base = getPublicApiBaseUrl()
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   const [file, setFile] = useState<File | null>(null)
   const [captchaToken, setCaptchaToken] = useState('')
@@ -98,19 +99,18 @@ export default function UploadPage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <Label htmlFor="captcha">CAPTCHA (placeholder)</Label>
-                    <Input
-                      id="captcha"
-                      placeholder="captcha-token"
-                      value={captchaToken}
-                      onChange={(e) => setCaptchaToken(e.target.value)}
-                      className="mt-2"
-                    />
-                    <div className="mt-2">
-                      <Alert tone="info" compact>
-                        This is a placeholder field for future integration.
-                      </Alert>
-                    </div>
+                    <Label>Anti-bot verification</Label>
+                    {turnstileSiteKey ? (
+                      <div className="mt-2">
+                        <TurnstileWidget siteKey={turnstileSiteKey} onToken={setCaptchaToken} />
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <Alert tone="warning" compact>
+                          Turnstile is not configured on the frontend. If the backend requires captcha, uploads will fail.
+                        </Alert>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -121,7 +121,7 @@ export default function UploadPage() {
                 ) : null}
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <Button type="submit" disabled={submitting}>
+                  <Button type="submit" disabled={submitting || (!!turnstileSiteKey && !captchaToken)}>
                     {submitting ? 'Uploading…' : 'Upload'}
                   </Button>
                   <ButtonLink href={`${base}/docs`} variant="secondary">

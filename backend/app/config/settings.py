@@ -56,5 +56,11 @@ class Settings(BaseSettings):
     rate_limit_download_per_minute: str = Field(default="30/minute", alias="RATE_LIMIT_DOWNLOAD_PER_MINUTE")
     rate_limit_redis_url: str | None = Field(default=None, alias="RATE_LIMIT_REDIS_URL")
 
+    # Cloudflare Turnstile
+    turnstile_enabled: bool = Field(default=False, alias="TURNSTILE_ENABLED")
+    turnstile_secret_key: str | None = Field(default=None, alias="TURNSTILE_SECRET_KEY")
+    # If set, Turnstile verify must return this hostname (e.g. minecrox.ktoxz.id.vn)
+    turnstile_expected_hostname: str | None = Field(default=None, alias="TURNSTILE_EXPECTED_HOSTNAME")
+
 
 settings = Settings()  # type: ignore[call-arg]

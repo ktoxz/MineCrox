@@ -9,6 +9,7 @@ class ReportCreate(BaseModel):
     slug: str = Field(min_length=1, max_length=255)
     reason: str = Field(min_length=3, max_length=2000)
     email: str | None = Field(default=None, max_length=320)
+    captcha_token: str | None = Field(default=None, max_length=2048)
 
 
 class ReportPublic(BaseModel):
