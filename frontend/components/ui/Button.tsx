@@ -6,7 +6,7 @@ type Size = 'sm' | 'md' | 'lg'
 
 function classesFor(variant: Variant, size: Size): string {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-xl font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50'
+    'inline-flex items-center justify-center gap-2 rounded-xl font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none will-change-transform hover:-translate-y-0.5 active:translate-y-0'
 
   const sizes: Record<Size, string> = {
     sm: 'h-9 px-3 text-sm',
@@ -15,10 +15,10 @@ function classesFor(variant: Variant, size: Size): string {
   }
 
   const variants: Record<Variant, string> = {
-    primary: 'bg-brand-600 text-white shadow-sm hover:bg-brand-700',
-    secondary: 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50',
+    primary: 'bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:shadow-sm',
+    secondary: 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:shadow-sm',
     ghost: 'bg-transparent text-slate-700 hover:bg-slate-100',
-    danger: 'bg-rose-600 text-white shadow-sm hover:bg-rose-700',
+    danger: 'bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:shadow-sm',
   }
 
   return `${base} ${sizes[size]} ${variants[variant]}`

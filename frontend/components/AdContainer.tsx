@@ -33,7 +33,7 @@ export function AdContainer({ placement }: { placement: string }) {
           <div className="rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-600">Sponsored</div>
         </div>
       ) : (
-        <div className="h-6" />
+        <div className="h-6 rounded-lg skeleton-shimmer" />
       )}
     </div>
   )

@@ -3,7 +3,7 @@ import type { ComponentProps, ReactNode } from 'react'
 export function Card({ className = '', ...props }: ComponentProps<'div'>) {
   return (
     <div
-      className={`rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur ${className}`}
+      className={`rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur transition-transform duration-200 will-change-transform motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-md ${className}`}
       {...props}
     />
   )

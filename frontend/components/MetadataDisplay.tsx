@@ -14,6 +14,7 @@ import {
   FileText,
   Hash,
   HardDrive,
+  Info,
   Link2,
 } from 'lucide-react'
 
@@ -24,6 +25,9 @@ export function MetadataDisplay({
   file: FilePublic
   downloadUrl: string
 }) {
+  const expiresHelp =
+    'Expiration is refreshed when the file is downloaded. If it gets at least one download per day, the expiry keeps moving forward.'
+
   const serverPropertiesSnippet = useMemo(
     () => `resource-pack=${downloadUrl}\nresource-pack-sha1=${file.sha1_hash}`,
     [downloadUrl, file.sha1_hash]
@@ -258,7 +262,13 @@ export function MetadataDisplay({
                 <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm backdrop-blur">
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                     <Clock className="h-4 w-4 text-slate-500" />
-                    Expires
+                    <span
+                      className="decoration-slate-300 underline decoration-dotted underline-offset-4"
+                      title={expiresHelp}
+                    >
+                      Expires
+                    </span>
+                    <Info className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                   </div>
                   <div className="mt-1 text-base font-semibold text-slate-900">{formatShortDate(file.expire_at)}</div>
                 </div>
@@ -320,7 +330,13 @@ export function MetadataDisplay({
           <div className="rounded-2xl border border-rose-200/80 bg-rose-50/60 p-3 shadow-sm backdrop-blur">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
               <Clock className="h-4 w-4 text-rose-700" />
-              Expires
+              <span
+                className="decoration-rose-300 underline decoration-dotted underline-offset-4"
+                title={expiresHelp}
+              >
+                Expires
+              </span>
+              <Info className="h-3.5 w-3.5 text-rose-700/70" aria-hidden="true" />
             </div>
             <div className="mt-1 text-base font-semibold text-slate-900">{formatShortDate(file.expire_at)}</div>
           </div>

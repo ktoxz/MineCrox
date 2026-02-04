@@ -1,82 +1,110 @@
-# MineCrox — Minecraft File Hosting & CDN Platform
+# MineCrox — Minecraft pack hosting (private-by-link)
 
-Monorepo:
+MineCrox is a minimalist file host for Minecraft packs:
 
-- `backend/`: FastAPI API service
-- `frontend/`: Next.js (App Router) web UI (SSR + SEO)
+- Upload **.zip**
+- Validate contents (resource pack / datapack)
+- Return a **private-by-link** landing page
+- Downloads use **signed redirects** (S3 keys are never exposed)
+
+Repo layout:
+
+- `backend/` — FastAPI API
+- `frontend/` — Next.js (App Router) SSR UI
+
+Key behavior:
+
+- No public listing
+- File pages are `noindex,nofollow`
+- **Sliding expiry**: when a file is downloaded, its **Expires** time is refreshed (so 1 download/day can keep it alive)
 
 ## Local dev (Docker)
 
 ```powershell
 Copy-Item .env.example .env
-# edit .env if needed
-
 docker compose up --build
 ```
 
-Frontend: http://localhost:3000
+- Web: http://localhost:3000
+- API: http://localhost:8000/docs
 
-Backend OpenAPI: http://localhost:8000/docs
+## Production (VPS + Docker + Caddy)
 
-## Production (Docker + Nginx)
+Recommended setup:
 
-This repo is set up to serve:
+- Web: `https://minecrox.ktoxz.id.vn`
+- API: `https://api.ktoxz.id.vn`
 
-- Web UI: `https://minecrox.ktoxz.id.vn` (Next.js)
-- API: `https://api.ktoxz.id.vn` (FastAPI)
+### 1) DNS
 
-### 1) Prepare DNS + firewall
+Create A-records for:
 
-- Create **A records** for `minecrox.ktoxz.id.vn` and `api.ktoxz.id.vn` pointing to your server IP.
-- Open ports `80` and `443`.
+- `minecrox.ktoxz.id.vn` → VPS IP
+- `api.ktoxz.id.vn` → VPS IP
 
-### 2) Configure environment
+### 2) Reverse proxy (Caddy)
 
-- Copy `.env.prod` to the server (or edit it in place).
-- Ensure these are correct:
-	- `DOMAIN=minecrox.ktoxz.id.vn`
-	- `BACKEND_CORS_ORIGINS=https://minecrox.ktoxz.id.vn`
-	- `NEXT_PUBLIC_API_BASE_URL=https://api.ktoxz.id.vn`
-
-### 3) Bootstrap TLS certs + start services
-
-Nginx config in [deploy/nginx/conf.d/minecrox.conf](deploy/nginx/conf.d/minecrox.conf) expects Let's Encrypt cert files to exist.
-Use the helper script to generate temporary dummy certs, start the stack, then request real certs:
-
-```bash
-chmod +x deploy/init-letsencrypt.sh
-./deploy/init-letsencrypt.sh you@example.com
-```
-
-After that, the stack is running via [docker-compose.prod.yml](docker-compose.prod.yml) and Nginx listens on `80/443`.
-
-### 4) Verify
-
-```bash
-curl -i https://api.ktoxz.id.vn/healthz
-curl -i https://minecrox.ktoxz.id.vn
-```
-
-Notes:
-
-- Uploads can be large; Nginx is configured with `client_max_body_size 110m` for `api.ktoxz.id.vn`.
-
-## Production (Caddy only)
-
-If you already run Caddy on the host (no Nginx), you can use the sample Caddy config:
+Install Caddy on the host and use the sample config:
 
 - [deploy/caddy/Caddyfile](deploy/caddy/Caddyfile)
 
-Key points:
-
-- `api.ktoxz.id.vn` sets `request_body max_size 120MB` to avoid proxy 413.
-- CORS headers are added by Caddy too, so even proxy errors won't look like CORS issues in the browser.
-
-After updating your Caddyfile:
+Reload:
 
 ```bash
 sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl reload caddy
 ```
 
-Important: if you're using Docker/systemd for the backend, you must **rebuild/restart** the backend after code changes; otherwise the old upload parser behavior will still return a plain `500` that browsers report as CORS.
+### 3) Production env
+
+Create `.env.prod` on the VPS (do not commit it). Start from `.env.example` and set at least:
+
+- `DOMAIN=minecrox.ktoxz.id.vn`
+- `BACKEND_ENV=prod`
+- `BACKEND_CORS_ORIGINS=https://minecrox.ktoxz.id.vn`
+- `NEXT_PUBLIC_API_BASE_URL=https://api.ktoxz.id.vn`
+- S3 (Vietnix): `S3_ENDPOINT_URL`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
+- `S3_PRESIGN_ENDPOINT_URL` must be **browser-reachable** (usually the same Vietnix endpoint)
+
+Important (Next.js): `NEXT_PUBLIC_*` is baked into the frontend at **build time**, so you must rebuild the frontend after changing `NEXT_PUBLIC_API_BASE_URL`.
+
+### 4) Start production containers
+
+Use [docker-compose.prod.yml](docker-compose.prod.yml):
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml ps
+```
+
+### 5) Verify
+
+```bash
+curl -i https://api.ktoxz.id.vn/healthz
+curl -i https://api.ktoxz.id.vn/docs
+```
+
+## Turnstile (anti-bot)
+
+If you enable Turnstile, you must configure both sides:
+
+- Backend: `TURNSTILE_ENABLED=true`, `TURNSTILE_SECRET_KEY=...`, optional `TURNSTILE_EXPECTED_HOSTNAME=minecrox.ktoxz.id.vn`
+- Frontend: `NEXT_PUBLIC_TURNSTILE_SITE_KEY=...` (requires frontend rebuild)
+
+## Troubleshooting
+
+### “CORS blocked” but the real issue is 500
+
+Browsers often display CORS errors when the API returns a `500` without CORS headers.
+Check backend logs:
+
+```bash
+docker compose -f docker-compose.prod.yml logs -n 200 backend
+```
+
+Common causes:
+
+- Wrong S3 bucket/keys, or bucket not created
+- Turnstile enabled but captcha token missing
+- Frontend built with `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
+

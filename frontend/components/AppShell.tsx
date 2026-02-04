@@ -1,18 +1,26 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AdContainer } from './AdContainer'
 import { SiteFooter } from './SiteFooter'
 import { SiteHeader } from './SiteHeader'
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname() ?? '/'
-  const isFilePage = useMemo(() => pathname.startsWith('/files/'), [pathname])
+  // Avoid hydration mismatches by not depending on routing state during SSR.
+  // We enable file-page spacing only after the app has mounted.
+  const [isFilePage, setIsFilePage] = useState(false)
 
   const headerRef = useRef<HTMLElement | null>(null)
   const [headerHeight, setHeaderHeight] = useState<number>(72)
+
+  useEffect(() => {
+    try {
+      setIsFilePage(window.location.pathname.startsWith('/files/'))
+    } catch {
+      setIsFilePage(false)
+    }
+  }, [])
 
   useLayoutEffect(() => {
     const el = headerRef.current

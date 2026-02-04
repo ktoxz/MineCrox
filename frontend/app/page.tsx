@@ -86,7 +86,7 @@ export default async function HomePage() {
     <div className="space-y-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm backdrop-blur">
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm backdrop-blur animate-fade-in-up">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-100/70 via-white to-white" />
         <div className="relative">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200">
@@ -122,9 +122,11 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <AdContainer placement="home-top" />
+      <div className="animate-fade-in-up" style={{ animationDelay: '80ms' }}>
+        <AdContainer placement="home-top" />
+      </div>
 
-      <section aria-labelledby="what" className="rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm">
+      <section aria-labelledby="what" className="rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm animate-fade-in-up" style={{ animationDelay: '120ms' }}>
         <h2 id="what" className="text-2xl font-semibold tracking-tight text-slate-900">
           Host Minecraft resource packs and datapacks
         </h2>
@@ -148,7 +150,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 lg:grid-cols-3 animate-fade-in-up" style={{ animationDelay: '160ms' }}>
         <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-6 shadow-sm">
           <div className="text-sm font-semibold text-slate-900">1) Upload</div>
           <div className="mt-2 text-sm text-slate-600">Choose a .zip resource pack or datapack. We validate contents for safety.</div>
@@ -163,7 +165,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section aria-labelledby="why" className="grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
+      <section aria-labelledby="why" className="grid gap-4 lg:grid-cols-[1.2fr,0.8fr] animate-fade-in-up" style={{ animationDelay: '200ms' }}>
         <div className="rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm">
           <h2 id="why" className="text-2xl font-semibold tracking-tight text-slate-900">
             Why creators use MineCrox
@@ -202,7 +204,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="faq" aria-labelledby="faq-title" className="rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm">
+      <section id="faq" aria-labelledby="faq-title" className="rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm animate-fade-in-up" style={{ animationDelay: '240ms' }}>
         <h2 id="faq-title" className="text-2xl font-semibold tracking-tight text-slate-900">
           Frequently asked questions
         </h2>
@@ -233,7 +235,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <div className="rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200/70 bg-white/70 p-8 shadow-sm animate-fade-in-up" style={{ animationDelay: '280ms' }}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
             <div className="text-sm font-semibold text-slate-900">Ready to share your pack?</div>
