@@ -1,0 +1,44 @@
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./deploy/certbot/www:/var/www/certbot:ro
+      - ./deploy/certbot/conf:/etc/letsencrypt:ro
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./deploy/certbot/conf:/etc/letsencrypt
+      - ./deploy/certbot/www:/var/www/certbot
+    entrypoint: sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done"
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./.env.prod
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    env_file:
+      - ./.env.prod
+    environment:
+      # internal SSR fetch inside docker network
+      API_INTERNAL_BASE_URL: http://backend:8000
+    expose:
+      - "3000"
+    depends_on:
+      - backend

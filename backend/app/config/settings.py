@@ -16,18 +16,44 @@ class Settings(BaseSettings):
     # env values and will raise if the value isn't valid JSON.
     cors_origins: str = Field(default="http://localhost:3000", alias="BACKEND_CORS_ORIGINS")
 
+    # Optional regex for matching allowed origins, e.g.
+    #   BACKEND_CORS_ORIGIN_REGEX=^https://(www\.)?minecrox\.ktoxz\.id\.vn$
+    cors_origin_regex: str | None = Field(default=None, alias="BACKEND_CORS_ORIGIN_REGEX")
+
     def cors_origins_list(self) -> list[str]:
         s = (self.cors_origins or "").strip()
         if not s:
-            return ["http://localhost:3000"]
-        if s.startswith("["):
+            origins = ["http://localhost:3000"]
+        elif s.startswith("["):
+            origins: list[str] = []
             try:
                 parsed = json.loads(s)
                 if isinstance(parsed, list) and all(isinstance(x, str) for x in parsed):
-                    return parsed
+                    origins = parsed
             except Exception:
-                pass
-        return [part.strip() for part in s.split(",") if part.strip()]
+                origins = []
+            if not origins:
+                origins = [part.strip() for part in s.split(",") if part.strip()]
+        else:
+            origins = [part.strip() for part in s.split(",") if part.strip()]
+
+        # Production safety: always allow the configured DOMAIN origin.
+        # This prevents "missing Access-Control-Allow-Origin" if env vars are misloaded.
+        if (self.backend_env or "").lower() == "prod":
+            domain = (self.domain or "").strip()
+            if domain:
+                if domain.startswith("http://") or domain.startswith("https://"):
+                    prod_origin = domain
+                else:
+                    prod_origin = f"https://{domain}"
+                if prod_origin not in origins:
+                    origins.append(prod_origin)
+
+        return origins
+
+    def cors_origin_regex_value(self) -> str | None:
+        v = (self.cors_origin_regex or "").strip()
+        return v or None
 
     database_url: str = Field(default="sqlite+aiosqlite:///./app.db", alias="DATABASE_URL")
 
@@ -45,6 +71,9 @@ class Settings(BaseSettings):
     # Important: do not change the host of a presigned URL after signing.
     s3_presign_endpoint_url: AnyUrl | None = Field(default=None, alias="S3_PRESIGN_ENDPOINT_URL")
     s3_region: str | None = Field(default=None, alias="S3_REGION")
+    # Some S3-compatible providers require SigV2 ("s3") for requests with payloads.
+    # Examples: S3_SIGNATURE_VERSION=s3
+    s3_signature_version: str = Field(default="s3v4", alias="S3_SIGNATURE_VERSION")
     s3_bucket: str = Field(default="minecrox-dev", alias="S3_BUCKET")
     s3_access_key_id: str = Field(default="minio", alias="S3_ACCESS_KEY_ID")
     s3_secret_access_key: str = Field(default="minio123456", alias="S3_SECRET_ACCESS_KEY")

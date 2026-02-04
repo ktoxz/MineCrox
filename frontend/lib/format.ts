@@ -13,9 +13,15 @@ export function formatBytes(bytes: number): string {
 
 export function formatShortDate(iso: string | null | undefined): string {
   if (!iso) return '—'
-  const date = new Date(iso)
+  // Normalize timestamps without timezone to UTC to avoid server/client differences.
+  const hasTimezone = /[zZ]|[+-]\d{2}:\d{2}$/.test(iso)
+  const normalized = hasTimezone ? iso : `${iso}Z`
+  const date = new Date(normalized)
   if (Number.isNaN(date.getTime())) return '—'
-  return new Intl.DateTimeFormat(undefined, {
+
+  // Use a fixed locale + timezone to prevent hydration mismatches.
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'short',
     day: '2-digit',

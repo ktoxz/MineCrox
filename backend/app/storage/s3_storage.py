@@ -17,8 +17,9 @@ class S3Storage:
             aws_secret_access_key=settings.s3_secret_access_key,
             region_name=settings.s3_region or None,
         )
+        signature_version = (settings.s3_signature_version or "").strip() or "s3v4"
         # Vietnix commonly prefers path-style; MinIO also works well with it.
-        self._config = Config(s3={"addressing_style": "path"})
+        self._config = Config(signature_version=signature_version, s3={"addressing_style": "path"})
 
     @staticmethod
     def from_depends() -> "S3Storage":
@@ -31,46 +32,21 @@ class S3Storage:
         return f"files/{year}/{month}/{file_id}/{safe_name}"
 
     async def upload_file(self, tmp_path: str, s3_key: str) -> None:
-        # Multipart upload keeps memory low.
-        part_size = 8 * 1024 * 1024
+        file_size = os.path.getsize(tmp_path)
         async with self._aiosession.client(
             "s3",
             endpoint_url=str(settings.s3_endpoint_url) if settings.s3_endpoint_url else None,
             config=self._config,
         ) as s3:
-            mp = await s3.create_multipart_upload(Bucket=settings.s3_bucket, Key=s3_key)
-            upload_id = mp["UploadId"]
-            parts = []
-            try:
-                part_number = 1
-                with open(tmp_path, "rb") as f:
-                    while True:
-                        data = f.read(part_size)
-                        if not data:
-                            break
-                        resp = await s3.upload_part(
-                            Bucket=settings.s3_bucket,
-                            Key=s3_key,
-                            UploadId=upload_id,
-                            PartNumber=part_number,
-                            Body=data,
-                        )
-                        parts.append({"ETag": resp["ETag"], "PartNumber": part_number})
-                        part_number += 1
-
-                await s3.complete_multipart_upload(
+            # Use PutObject streaming from disk.
+            # This avoids multipart compatibility issues and keeps memory usage low.
+            with open(tmp_path, "rb") as f:
+                await s3.put_object(
                     Bucket=settings.s3_bucket,
                     Key=s3_key,
-                    UploadId=upload_id,
-                    MultipartUpload={"Parts": parts},
+                    Body=f,
+                    ContentLength=file_size,
                 )
-            except Exception:
-                await s3.abort_multipart_upload(
-                    Bucket=settings.s3_bucket,
-                    Key=s3_key,
-                    UploadId=upload_id,
-                )
-                raise
 
     async def delete_object(self, s3_key: str) -> None:
         async with self._aiosession.client(

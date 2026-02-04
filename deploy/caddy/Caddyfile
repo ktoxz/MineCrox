@@ -1,0 +1,65 @@
+{
+	# Optional: set an email for Let's Encrypt notifications
+	# email you@example.com
+
+	# Recommended when behind Cloudflare; comment out if not needed.
+	# servers {
+	# 	trusted_proxies cloudflare
+	# }
+}
+
+minecrox.ktoxz.id.vn {
+	encode zstd gzip
+
+	# Next.js
+	reverse_proxy 127.0.0.1:3000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}
+
+api.ktoxz.id.vn {
+	encode zstd gzip
+
+	# Allow larger uploads than 100MB (+multipart overhead)
+	request_body {
+		max_size 120MB
+	}
+
+	# Handle CORS at the edge so browser doesn't show proxy errors as "CORS"
+	@preflight method OPTIONS
+
+	# Preflight must return headers too.
+	handle @preflight {
+		header {
+			Access-Control-Allow-Origin "https://minecrox.ktoxz.id.vn"
+			Access-Control-Allow-Credentials "true"
+			Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+			Access-Control-Allow-Headers "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Requested-With"
+			Vary "Origin"
+		}
+		respond "" 204
+	}
+
+	# Ensure CORS headers even when reverse_proxy returns an error response.
+	handle_errors {
+		header {
+			Access-Control-Allow-Origin "https://minecrox.ktoxz.id.vn"
+			Access-Control-Allow-Credentials "true"
+			Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+			Access-Control-Allow-Headers "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Requested-With"
+			Vary "Origin"
+		}
+		respond "{http.error.status_code}" {http.error.status_code}
+	}
+
+	# FastAPI
+	reverse_proxy 127.0.0.1:8000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

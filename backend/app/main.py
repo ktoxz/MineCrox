@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.router import api_router
 from app.api.public import router as public_router
@@ -19,6 +20,12 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json",
     )
 
+    @app.exception_handler(Exception)
+    async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        # If an exception reaches Starlette's ServerErrorMiddleware, CORS headers won't be added.
+        # Converting it to a normal response ensures CORSMiddleware can decorate it.
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+
     @app.get("/", include_in_schema=False)
     async def _root() -> dict:
         return {
@@ -31,15 +38,19 @@ def create_app() -> FastAPI:
     async def _healthz() -> dict:
         return {"status": "ok"}
 
+    init_rate_limiter(app)
+
+    # Add CORS last so it wraps responses from all other middleware.
+    cors_origin_regex = settings.cors_origin_regex_value()
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list(),
+        allow_origin_regex=cors_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    init_rate_limiter(app)
     app.include_router(api_router)
     app.include_router(public_router)
 

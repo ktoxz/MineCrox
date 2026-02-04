@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 export function SiteFooter() {
+  const year = new Date().getUTCFullYear()
   return (
     <footer className="border-t border-slate-200/70 bg-white/60">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-3">
@@ -34,7 +35,7 @@ export function SiteFooter() {
           <div className="mt-2 text-sm text-slate-600">
             Ads and CAPTCHA are placeholders. Files may be deleted after inactivity.
           </div>
-          <div className="mt-3 text-xs text-slate-500">© {new Date().getFullYear()} MineCrox</div>
+          <div className="mt-3 text-xs text-slate-500">© {year} MineCrox</div>
         </div>
       </div>
     </footer>

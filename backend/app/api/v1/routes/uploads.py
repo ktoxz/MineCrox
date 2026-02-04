@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, Request
 from fastapi import HTTPException
 from urllib.parse import urlparse
 
@@ -16,10 +16,26 @@ router = APIRouter(prefix="/uploads")
 @limiter.limit(settings.rate_limit_upload_10_per_day)
 async def upload_file(
     request: Request,
-    upload: UploadFile = File(..., description="Minecraft-related file"),
-    captcha_token: str | None = Form(default=None),
     service: UploadService = Depends(UploadService.from_depends),
 ) -> FileCreateResponse:
+    # IMPORTANT:
+    # Starlette's multipart parser has a per-part size limit (default is small).
+    # For real uploads (~100MB), parsing can fail before we reach UploadService.
+    # Parse the form here with an explicit max_part_size.
+    try:
+        form = await request.form(max_part_size=settings.max_upload_bytes)
+    except Exception as e:
+        # Convert parser errors into a consistent client error.
+        raise HTTPException(status_code=413, detail=str(e) or "Upload too large")
+
+    upload = form.get("upload")
+    captcha_token = form.get("captcha_token")
+    if not hasattr(upload, "read"):
+        # Match FastAPI's typical validation behavior.
+        raise HTTPException(status_code=422, detail="Field 'upload' is required")
+    if captcha_token is not None and not isinstance(captcha_token, str):
+        captcha_token = str(captcha_token)
+
     if settings.turnstile_enabled:
         try:
             ip = get_request_ip(dict(request.headers), request.client.host if request.client else None)
